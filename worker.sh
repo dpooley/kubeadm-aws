@@ -15,10 +15,9 @@ echo "deb http://apt.kubernetes.io/ kubernetes-xenial main" > /etc/apt/sources.l
 echo "deb http://ppa.launchpad.net/projectatomic/ppa/ubuntu xenial main" > /etc/apt/sources.list.d/project-atomic.list
 export DEBIAN_FRONTEND=noninteractive
 apt update
-apt install -y kubelet=${k8sversion}-00 kubeadm=${k8sversion}-00 kubectl=${k8sversion}-00
-apt-mark hold kubelet kubeadm kubectl
-apt install -y cri-o-1.12 cri-o-runc containernetworking-plugins || true
+apt install -y kubelet=${k8sversion}-00 kubeadm=${k8sversion}-00 kubectl=${k8sversion}-00 cri-o-1.12 cri-o-runc containernetworking-plugins || true
 apt install -yf
+apt-mark hold kubelet kubeadm kubectl
 
 # Load br_netfilter kernel module
 echo 'br_netfilter' >> /etc/modules-load.d/br_netfilter.conf
