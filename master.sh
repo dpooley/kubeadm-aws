@@ -8,16 +8,33 @@ systemctl disable snapd snapd.socket lxcfs snap.amazon-ssm-agent.amazon-ssm-agen
 swapoff -a
 sed -i '/swap/d' /etc/fstab
 
-# Install K8S, kubeadm and Docker 17.03 (most recent supported version for Kubernetes)
+# Install K8S, kubeadm, crio
 curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
+gpg --keyserver keyserver.ubuntu.com --recv 8BECF1637AD8C79D && gpg --export --armor 8BECF1637AD8C79D | apt-key add -
 echo "deb http://apt.kubernetes.io/ kubernetes-xenial main" > /etc/apt/sources.list.d/kubernetes.list
+echo "deb http://ppa.launchpad.net/projectatomic/ppa/ubuntu xenial main" > /etc/apt/sources.list.d/project-atomic.list
 export DEBIAN_FRONTEND=noninteractive
 apt-get update
-wget http://launchpadlibrarian.net/361362020/docker.io_17.03.2-0ubuntu5_amd64.deb
-dpkg -i docker.io_17.03.2-0ubuntu5_amd64.deb
-apt-get install -fy
 apt-get install -y kubelet=${k8sversion}-00 kubeadm=${k8sversion}-00 kubectl=${k8sversion}-00 awscli jq
-apt-mark hold kubelet kubeadm kubectl docker.io
+apt-mark hold kubelet kubeadm kubectl
+apt-get install -y cri-o-1.12 cri-o-runc containernetworking-plugins || true
+apt-get install -yf 
+
+# Load br_netfilter kernel module
+echo 'br_netfilter' >> /etc/modules-load.d/br_netfilter.conf
+modprobe br_netfilter
+
+# Configure sysctl 
+cat <<'EOF' >> /etc/sysctl.conf
+net.bridge.bridge-nf-call-iptables = 1
+net.ipv4.ip_forward = 1
+EOF
+sysctl -p
+
+# Configure and start crio
+sed -i '/^cgroup_manager/s/systemd/cgroupfs/' /etc/crio/crio.conf
+systemctl enable crio
+systemctl start crio
 
 # Install etcdctl for the version of etcd we're running
 ETCD_VERSION=$(kubeadm config images list | grep etcd | cut -d':' -f2)
@@ -25,24 +42,6 @@ wget "https://github.com/coreos/etcd/releases/download/v$${ETCD_VERSION}/etcd-v$
 tar xvf "etcd-v$${ETCD_VERSION}-linux-amd64.tar.gz"
 mv "etcd-v$${ETCD_VERSION}-linux-amd64/etcdctl" /usr/local/bin/
 rm -rf etcd*
-
-# Point Docker at big ephemeral drive and turn on log rotation (messy because data-root option didn't exist in 17.03)
-systemctl stop docker
-mkdir /mnt/docker
-chmod 711 /mnt/docker
-rm -rf /var/lib/docker
-ln -s /mnt/docker /var/lib/docker
-cat <<EOF > /etc/docker/daemon.json
-{
-    "log-driver": "json-file",
-    "log-opts": {
-        "max-size": "10m",
-        "max-file": "5"
-    }
-}
-EOF
-systemctl start docker
-systemctl enable docker
 
 # Work around the fact spot requests can't tag their instances
 REGION=$(ec2metadata --availability-zone | rev | cut -c 2- | rev)
@@ -53,7 +52,7 @@ aws --region $REGION ec2 create-tags --resources $INSTANCE_ID --tags "Key=Name,V
 mkdir /mnt/kubelet
 echo 'KUBELET_EXTRA_ARGS="--root-dir=/mnt/kubelet --cloud-provider=aws"' > /etc/default/kubelet
 
-cat >init-config.yaml <<EOF
+cat <<EOF > init-config.yaml
 apiVersion: kubeadm.k8s.io/v1alpha2
 kind: MasterConfiguration
 controllerManagerExtraArgs:
@@ -71,6 +70,7 @@ bootstrapTokens:
 networking:
   podSubnet: "10.244.0.0/16"
 nodeRegistration:
+  criSocket: /var/run/crio/crio.sock
   name: "$(hostname -f)"
 EOF
 
@@ -102,23 +102,19 @@ else
   touch /tmp/fresh-cluster
 fi
 
-# Pass bridged IPv4 traffic to iptables chains (required by Flannel like the above cidr setting)
-echo "net.bridge.bridge-nf-call-iptables = 1" > /etc/sysctl.d/60-flannel.conf
-service procps start
-
 # Set up kubectl for the ubuntu user
 mkdir -p /home/ubuntu/.kube && cp -i /etc/kubernetes/admin.conf /home/ubuntu/.kube/config && chown -R ubuntu. /home/ubuntu/.kube
 echo 'source <(kubectl completion bash)' >> /home/ubuntu/.bashrc
 
 if [ -f /tmp/fresh-cluster ]; then
-  su -c 'kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/v0.10.0/Documentation/kube-flannel.yml' ubuntu
+  su -c 'kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml' ubuntu
   mkdir /tmp/manifests
   aws s3 sync s3://${s3bucket}/manifests/ /tmp/manifests
   su -c 'kubectl apply -n kube-system -f /tmp/manifests/' ubuntu
 fi
 
 # Allow pod scheduling on the master (no recommended but we're doing it anyway :D)
-su -c 'kubectl taint nodes --all node-role.kubernetes.io/master-' ubuntu
+su -c 'kubectl taint nodes --all node-role.kubernetes.io/master-' ubuntu || true
 
 # Set up backups if they have been enabled
 if [[ ! -z "${s3bucket}" ]]; then
