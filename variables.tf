@@ -45,11 +45,11 @@ variable "admin-cidr-blocks" {
 }
 
 variable "region" {
-  default = "us-east-1"
+  default = "ap-southeast-2"
 }
 
 variable "kubernetes-version" {
-  default = "1.11.3"
+  default = "1.12.1"
   description = "Which version of Kubernetes to install"
 }
 
