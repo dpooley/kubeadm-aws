@@ -17,20 +17,23 @@ Current features:
 
 ### Run it!
 
-1. Clone the repo
-2. [Install Terraform](https://www.terraform.io/intro/getting-started/install.html)
-3. Generate token: `python -c 'import random; print "%0x.%0x" % (random.SystemRandom().getrandbits(3*8), random.SystemRandom().getrandbits(8*8))' > token.txt`
-4. Make an SSH key on us-east-1 from the AWS console
-5. Run terraform plan: `terraform plan -var k8s-ssh-key=<aws-ssh-key-name> -var k8stoken=$(cat token.txt) -var admin-cidr-blocks="<my-public-ip-address>/32"`
-6. Build out infrastructure: `terraform apply -var k8s-ssh-key=<aws-ssh-key-name> -var k8stoken=$(cat token.txt) -var admin-cidr-blocks="<my-public-ip-address>/32"`
-7. SSH to K8S master and run something: `ssh ubuntu@$(terraform output master_dns) -i <aws-ssh-key-name>.pem kubectl get no`
-10. Done!
+1. [Install Terraform](https://www.terraform.io/intro/getting-started/install.html)
+2. [Install](https://docs.aws.amazon.com/cli/latest/userguide/installing.html) and [Configure](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-getting-started.html) AWS CLI
+3. Clone the repo
+4. Change directory: `cd kubeadm-aws`
+5. Generate token: `python -c 'import random; print "%0x.%0x" % (random.SystemRandom().getrandbits(3*8), random.SystemRandom().getrandbits(8*8))' > token.txt`
+6. Make an SSH key on region set in `variables.tf`(ap-southeast-2 by default) from the AWS console.
+7. Run terraform plan: `terraform plan -var k8s-ssh-key=<aws-ssh-key-name> -var k8stoken=$(cat token.txt) -var admin-cidr-blocks="<my-public-ip-address>/32"`
+8. Build out infrastructure: `terraform apply -var k8s-ssh-key=<aws-ssh-key-name> -var k8stoken=$(cat token.txt) -var admin-cidr-blocks="<my-public-ip-address>/32"`
+9. Wait for cluster to build, check `/var/log/cloud-init-output.log` on master for progress
+10. SSH to K8S master and run something: `ssh ubuntu@$(terraform output master_dns) -i <aws-ssh-key-name>.pem kubectl get no`
+11. Done!
 
 Optional Variables:
 
 * `worker-count` - How many worker nodes to request via Spot Fleet (1 by default)
-* `region` - Which AWS region to use (us-east-1 by default)
-* `kubernetes-version` - Which Kubernetes/kubeadm version to install (1.11.3 by default)
+* `region` - Which AWS region to use (ap-southeast-2 by default)
+* `kubernetes-version` - Which Kubernetes/kubeadm version to install (1.12.1 by default)
 * `master-instance-type` - Which EC2 instance type to use for the master node (m1.small by default)
 * `master-spot-price` - The maximum spot bid for the master node ($0.01 by default)
 * `worker-instance-type` - Which EC2 instance type to use for the worker nodes (m1.small by default)
@@ -42,6 +45,7 @@ Optional Variables:
 
 ### Contributing
 
+Forked from cablespaghetti/kubeadm-aws:
 I've written this as a personal project and will do my best to maintain it to a good standard, despite having very limited free time. I very much welcome contributions in the form of Pull Requests and Issues (for both bugs and feature requests).
 
 ### Note about the license
