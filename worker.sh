@@ -39,9 +39,5 @@ systemctl start crio
 mkdir /mnt/kubelet
 echo 'KUBELET_EXTRA_ARGS="--root-dir=/mnt/kubelet --cloud-provider=aws"' > /etc/default/kubelet
 
-# Pass bridged IPv4 traffic to iptables chains (required by Flannel)
-echo "net.bridge.bridge-nf-call-iptables = 1" > /etc/sysctl.d/60-flannel.conf
-service procps start
-
 # Join the cluster
 for i in {1..50}; do kubeadm join --cri-socket=/var/run/crio/crio.sock --token=${k8stoken} --discovery-token-unsafe-skip-ca-verification --node-name=$(hostname -f) ${masterIP}:6443 && break || sleep 15; done
