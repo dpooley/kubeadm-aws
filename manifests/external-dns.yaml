@@ -57,6 +57,21 @@ spec:
         - --cloudflare-proxied # (optional) enable the proxy feature of Cloudflare (DDOS protection, CDN...)
         env:
         - name: CF_API_KEY
-          value: "CLOUDFLARE_API_KEY"
+          valueFrom:
+            secretKeyRef:
+              name: cloudflare-api
+              key: key
         - name: CF_API_EMAIL
-          value: "CLOUDFLARE_API_EMAIL"
+          valueFrom:
+            secretKeyRef:
+              name: cloudflare-api
+              key: email
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: cloudflare-api
+type: Opaque
+data:
+  key: CLOUDFLARE_API_KEY
+  email: CLOUDFLARE_API_EMAIL
