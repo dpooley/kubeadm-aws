@@ -296,32 +296,6 @@ resource "aws_iam_role_policy_attachment" "s3-bucket-policy" {
   policy_arn = "${aws_iam_policy.s3-bucket-policy.arn}"
 }
 
-resource "aws_iam_policy" "route53-policy" {
-  count       = "${var.external-dns-enabled}"
-  name        = "${var.cluster-name}-route53-policy"
-  path        = "/"
-  description = "Polcy for ${var.cluster-name} cluster to allow access to Route 53 for DNS record creation"
-
-  policy = <<EOF
-{
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Effect": "Allow",
-            "Action": ["route53:*"],
-            "Resource": "*"
-        }
-    ]
-}
-EOF
-}
-
-resource "aws_iam_role_policy_attachment" "route53-policy" {
-  count      = "${var.external-dns-enabled}"
-  role       = "${aws_iam_role.role.name}"
-  policy_arn = "${aws_iam_policy.route53-policy.arn}"
-}
-
 resource "aws_iam_policy" "elb-policy" {
   name        = "${var.cluster-name}-elb-policy"
   path        = "/"
