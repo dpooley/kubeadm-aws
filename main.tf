@@ -322,6 +322,37 @@ resource "aws_iam_role_policy_attachment" "route53-policy" {
   policy_arn = "${aws_iam_policy.route53-policy.arn}"
 }
 
+resource "aws_iam_policy" "elb-policy" {
+  count       = "${var.external-dns-enabled}"
+  name        = "${var.cluster-name}-elb-policy"
+  path        = "/"
+  description = "Polcy for ${var.cluster-name} cluster to allow access to ELB for ELB creation"
+
+  policy = <<EOF
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": ["elasticloadbalancing:*"],
+            "Resource": "*"
+        },
+        {
+            "Effect": "Allow",
+            "Action": ["ec2:*"],
+            "Resource": "*"
+        }
+    ]
+}
+EOF
+}
+
+resource "aws_iam_role_policy_attachment" "elb-policy" {
+  count      = "${var.external-dns-enabled}"
+  role       = "${aws_iam_role.role.name}"
+  policy_arn = "${aws_iam_policy.elb-policy.arn}"
+}
+
 resource "aws_iam_instance_profile" "profile" {
   name = "${var.cluster-name}-instance-profile"
   role = "${aws_iam_role.role.name}"
