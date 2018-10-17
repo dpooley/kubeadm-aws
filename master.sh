@@ -111,6 +111,7 @@ if [ -f /tmp/fresh-cluster ]; then
   su -c 'kubectl apply -f https://raw.githubusercontent.com/cloudnativelabs/kube-router/master/daemonset/kubeadm-kuberouter.yaml' ubuntu
   mkdir /tmp/manifests
   aws s3 sync s3://${s3bucket}/manifests/ /tmp/manifests
+  sed -i -e "s/CLOUDFLARE_API_KEY/${cloudflare-api-key}/" -e "s/CLOUDFLARE_API_EMAIL/${cloudflare-api-email}" /tmp/manifests/external-dns.yaml
   su -c 'kubectl apply -n kube-system -f /tmp/manifests/' ubuntu
 fi
 

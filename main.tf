@@ -175,6 +175,8 @@ data "template_file" "master-userdata" {
     s3bucket = "${(var.backup-enabled == "1" ? aws_s3_bucket.s3-bucket.id : "")}"
     backupcron = "${var.backup-cron-expression}"
     k8sversion = "${var.kubernetes-version}"
+    cloudflare-api-email = "${var.external-dns-cloudflare-api-email}"
+    cloudflare-api-key = "${external-dns-cloudflare-api-key}"
   }
 }
 

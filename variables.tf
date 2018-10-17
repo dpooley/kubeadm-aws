@@ -92,3 +92,13 @@ variable "external-dns-enabled" {
   default = "1"
   description = "Whether or not to enable external-dns. (1 for enabled, 0 for disabled)"
 }
+
+variable "external-dns-cloudflare-api-key" {
+  default = "YOURAPIKEY"
+  description = "API key from your cloudflare account"
+}
+
+variable "external-dns-cloudflare-api-email" {
+  default = "test@test.com"
+  description = "Email Address from your cloudflare account"
+}
