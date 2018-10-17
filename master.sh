@@ -32,6 +32,7 @@ sysctl -p
 
 # Configure and start crio
 sed -i '/^cgroup_manager/s/systemd/cgroupfs/' /etc/crio/crio.conf
+sed -i "/#registries = \[/s/#registries = \[/registries = \['docker.io'\]/" /etc/crio/crio.conf
 systemctl enable crio
 systemctl start crio
 
@@ -56,6 +57,7 @@ apiVersion: kubeadm.k8s.io/v1alpha2
 kind: MasterConfiguration
 controllerManagerExtraArgs:
   cloud-provider: aws
+  configure-cloud-routes: "false"
 apiServerExtraArgs:
   cloud-provider: aws
 bootstrapTokens:
@@ -106,7 +108,7 @@ mkdir -p /home/ubuntu/.kube && cp -i /etc/kubernetes/admin.conf /home/ubuntu/.ku
 echo 'source <(kubectl completion bash)' >> /home/ubuntu/.bashrc
 
 if [ -f /tmp/fresh-cluster ]; then
-  su -c 'kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml' ubuntu
+  su -c 'kubectl apply -f https://raw.githubusercontent.com/cloudnativelabs/kube-router/master/daemonset/kubeadm-kuberouter.yaml' ubuntu
   mkdir /tmp/manifests
   aws s3 sync s3://${s3bucket}/manifests/ /tmp/manifests
   su -c 'kubectl apply -n kube-system -f /tmp/manifests/' ubuntu

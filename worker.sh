@@ -32,6 +32,7 @@ sysctl -p
 
 # Configure and start crio
 sed -i '/^cgroup_manager/s/systemd/cgroupfs/' /etc/crio/crio.conf
+sed -i "/#registries = \[/s/#registries = \[/registries = \['docker.io'\]/" /etc/crio/crio.conf
 systemctl enable crio
 systemctl start crio
 
