@@ -176,7 +176,7 @@ data "template_file" "master-userdata" {
     backupcron = "${var.backup-cron-expression}"
     k8sversion = "${var.kubernetes-version}"
     cloudflare-api-email = "${var.external-dns-cloudflare-api-email}"
-    cloudflare-api-key = "${external-dns-cloudflare-api-key}"
+    cloudflare-api-key = "${var.external-dns-cloudflare-api-key}"
   }
 }
 
