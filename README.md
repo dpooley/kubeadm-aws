@@ -9,7 +9,7 @@ Current features:
 * Automatic backup and recovery. So if your master gets terminated, when the replacement is provisioned by AWS it will pick up where the old one left off without you doing anything. 😁
 * Completely automated provisioning through Terraform and Bash.
 * Variables for many things including number of workers (requested through spot fleet) and EC2 instance type.
-* [External DNS](https://github.com/kubernetes-incubator/external-dns) as a cheap ELB alternative.
+* [External DNS](https://github.com/kubernetes-incubator/external-dns) with cloudflare (CDN enabled)
 * Persistent Volumes using GP2 storage on EBS.
 
 **Please use the releases rather than pulling from master. Master may be untested at any given point in time.**
@@ -24,11 +24,12 @@ Current features:
 5. Install Terrafrom providers: `terraform init`
 6. Generate token: `python -c 'import random; print "%0x.%0x" % (random.SystemRandom().getrandbits(3*8), random.SystemRandom().getrandbits(8*8))' > token.txt`
 7. Make an SSH key on region set in `variables.tf`(ap-southeast-2 by default) from the AWS console.
-8. Run terraform plan: `terraform plan -var k8s-ssh-key=<aws-ssh-key-name> -var k8stoken=$(cat token.txt) -var admin-cidr-blocks="<my-public-ip-address>/32"`
-9. Build out infrastructure: `terraform apply -var k8s-ssh-key=<aws-ssh-key-name> -var k8stoken=$(cat token.txt) -var admin-cidr-blocks="<my-public-ip-address>/32"`
-10. Wait for cluster to build, check `/var/log/cloud-init-output.log` on master for progress
-11. SSH to K8S master and run something: `ssh ubuntu@$(terraform output master_dns) -i <aws-ssh-key-name>.pem kubectl get no`
-12. Done!
+8. Update `variables.tf` to desired values (add cloudflare api key/email for external DNS)
+9. Run terraform plan: `terraform plan -var k8s-ssh-key=<aws-ssh-key-name> -var k8stoken=$(cat token.txt) -var admin-cidr-blocks="<my-public-ip-address>/32"`
+10. Build out infrastructure: `terraform apply -var k8s-ssh-key=<aws-ssh-key-name> -var k8stoken=$(cat token.txt) -var admin-cidr-blocks="<my-public-ip-address>/32"`
+11. Wait for cluster to build, check `/var/log/cloud-init-output.log` on master for progress
+12. SSH to K8S master and run something: `ssh ubuntu@$(terraform output master_dns) -i <aws-ssh-key-name>.pem kubectl get no`
+13. Done!
 
 Optional Variables:
 
@@ -43,6 +44,8 @@ Optional Variables:
 * `backup-enabled` - Set to "0" to disable the automatic etcd backups (1 by default)
 * `backup-cron-expression` - A cron expression to use for the automatic etcd backups (`*/15 * * * *` by default)
 * `external-dns-enabled` - Set to "0" to disable the pre-requisites for ExternalDNS (1 by default)
+* `external-dns-cloudflare-api-key` - Your cloudflare API key required if using external DNS
+* `external-dns-cloudflare-api-email` - Your cloudflare API email required if using external DNS
 
 ### Contributing
 
